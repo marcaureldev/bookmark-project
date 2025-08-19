@@ -9,7 +9,7 @@ import Header from "../components/dashboard/Header.vue";
     <Sidebar />
     <div class="flex-1 flex flex-col">
       <Header />
-      <div class="flex-1 p-4">
+      <div class="flex-1 p-5">
         <RouterView />
       </div>
     </div>

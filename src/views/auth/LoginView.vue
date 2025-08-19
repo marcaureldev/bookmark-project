@@ -14,7 +14,6 @@ import { Icon } from "@iconify/vue";
         </p>
       </div>
 
-      <!-- Social Login Buttons -->
       <div class="space-y-3 mb-6">
         <button
           class="w-full flex items-center justify-center space-x-3 px-4 py-3 bg-gray-800 hover:bg-gray-700 text-white rounded-lg border border-gray-600 transition-colors"

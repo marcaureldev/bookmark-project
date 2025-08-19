@@ -10,14 +10,8 @@ const routes = [
   { path: "/", component: HomeView },
   { path: "/auth/register", component: RegisterView },
   { path: "/auth/login", component: LoginView },
-  {
-    path: "",
-    component: DashboardLayout,
-    children: [
-      { path: "/dashboard", component: DashboardView },
-      { path: "/bookmarks", component: BookMarksView },
-    ],
-  },
+  { path: "/dashboard", component: DashboardLayout, children: [{ path: "", component: DashboardView }] },
+  { path: "/bookmarks", component: DashboardLayout, children: [{ path: "", component: BookMarksView }] },
 ];
 
 const router = createRouter({

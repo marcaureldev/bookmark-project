@@ -87,7 +87,7 @@ const user = {
 <template>
   <div class="w-64 h-screen bg-white border-r border-gray-200 flex flex-col">
     <div class="flex-1 py-4 space-y-8">
-      <div class="p-4 border-b border-gray-200">
+      <div class="p-3.5 border-b border-gray-200">
         <div class="flex items-center space-x-3">
           <div
             class="w-10 h-10 bg-blue-700 rounded-lg flex items-center justify-center"
