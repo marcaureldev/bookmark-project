@@ -18,4 +18,8 @@
   </div>
 </template>
 
-<style scoped></style>
+<style scoped>
+* {
+  font-family: "Inter", sans-serif;
+}
+</style>

@@ -6,9 +6,9 @@ import Header from "../components/dashboard/Header.vue";
 
 <template>
   <div class="flex h-screen bg-gray-50 text-black">
-    <Sidebar />
-    <div class="flex-1 flex flex-col">
-      <Header />
+    <Sidebar class="fixed" />
+    <div class="flex-1 flex flex-col ml-64">
+      <Header class="sticky top-0 z-10" />
       <div class="flex-1 p-5">
         <RouterView />
       </div>
