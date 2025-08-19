@@ -1,5 +1,101 @@
 <script setup lang="ts">
 import { Icon } from "@iconify/vue";
+import axios from "axios";
+import { ref } from "vue";
+import { toast, type ToastOptions } from "vue3-toastify";
+import { useRouter } from "vue-router";
+
+const email = ref("");
+const password = ref("");
+const isLoading = ref(false);
+const router = useRouter();
+
+const notify = (message: string, type: "success" | "error" = "success") => {
+  toast(message, {
+    autoClose: 3000,
+    position: toast.POSITION.BOTTOM_RIGHT,
+    type: type,
+  } as ToastOptions);
+};
+
+const messages = {
+  success: "Connexion réussie",
+  error: "Une erreur est survenue lors de la connexion",
+  empty: "Veuillez remplir tous les champs",
+  invalidEmail: "Veuillez saisir une adresse email valide",
+  invalidCredentials: "Email ou mot de passe incorrect",
+  networkError: "Erreur de connexion. Vérifiez votre connexion internet.",
+};
+
+const validateForm = () => {
+  if (!email.value || !password.value) {
+    notify(messages.empty, "error");
+    return false;
+  }
+
+  // Validation email basique
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email.value)) {
+    notify(messages.invalidEmail, "error");
+    return false;
+  }
+
+  // Pour la connexion, on vérifie juste que le mot de passe n'est pas vide
+  if (password.value.trim() === "") {
+    notify("Veuillez saisir votre mot de passe", "error");
+    return false;
+  }
+
+  return true;
+};
+
+const handleSubmit = async () => {
+  if (!validateForm()) return;
+
+  isLoading.value = true;
+
+  try {
+    const formData = {
+      email: email.value.trim(),
+      password: password.value,
+    };
+
+    const response = await axios.post(
+      "https://frontend-test-api-eta.vercel.app/auth/login",
+      formData
+    );
+
+    if (response.status === 200) {
+      if (response.data.access_token) {
+        localStorage.setItem("token", response.data.access_token);
+        notify(messages.success, "success");
+        router.push("/dashboard");
+      } else {
+        notify("Token d'accès manquant dans la réponse", "error");
+      }
+    }
+  } catch (error: any) {
+    console.error("Login error:", error);
+    
+    let errorMessage = messages.error;
+    
+    if (error.response) {
+      if (error.response.status === 401) {
+        errorMessage = messages.invalidCredentials;
+      } else if (error.response.status === 400) {
+        errorMessage = "Données invalides";
+      } else if (error.response.data && error.response.data.message) {
+        errorMessage = error.response.data.message;
+      }
+    } else if (error.request) {
+      errorMessage = messages.networkError;
+    }
+    
+    notify(errorMessage, "error");
+  } finally {
+    isLoading.value = false;
+  }
+};
 </script>
 
 <template>
@@ -17,6 +113,7 @@ import { Icon } from "@iconify/vue";
       <div class="space-y-3 mb-6">
         <button
           class="w-full flex items-center justify-center space-x-3 px-4 py-3 bg-gray-800 hover:bg-gray-700 text-white rounded-lg border border-gray-600 transition-colors"
+          :disabled="isLoading"
         >
           <div class="w-5 h-5 rounded-full flex items-center justify-center">
             <Icon icon="mdi:google" class="w-8 h-8" />
@@ -50,14 +147,16 @@ import { Icon } from "@iconify/vue";
           <input
             type="email"
             placeholder="votre@email.com"
-            class="w-full pl-10 pr-3 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            v-model="email"
+            :disabled="isLoading"
+            class="w-full pl-10 pr-3 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
           />
         </div>
       </div>
 
       <div class="mb-6">
         <label class="block text-white text-sm font-medium mb-2">
-          Password
+          Mot de passe
         </label>
         <div class="relative">
           <div
@@ -71,29 +170,29 @@ import { Icon } from "@iconify/vue";
           <input
             type="password"
             placeholder="••••••••"
-            class="w-full pl-10 pr-3 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            v-model="password"
+            :disabled="isLoading"
+            class="w-full pl-10 pr-3 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
           />
         </div>
       </div>
 
-      <div class="flex items-center justify-between mb-6">
-        <label class="flex items-center">
-          <input
-            type="checkbox"
-            class="w-4 h-4 text-blue-600 bg-gray-800 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
-          />
-          <span class="ml-2 text-white text-sm">Remember me</span>
-        </label>
-        <a href="#" class="text-blue-500 hover:text-blue-400 text-sm"
-          >Mot de passe oublié ?</a
-        >
-      </div>
-
       <button
-        class="w-full flex items-center justify-center space-x-3 px-4 py-3 bg-gray-800 hover:bg-gray-700 text-white rounded-lg border border-gray-600 transition-colors mb-4"
+        class="w-full flex items-center justify-center space-x-3 px-4 py-3 bg-gray-800 hover:bg-gray-700 text-white rounded-lg border border-gray-600 transition-colors mb-4 disabled:opacity-50 disabled:cursor-not-allowed"
+        @click="handleSubmit"
+        :disabled="isLoading"
       >
-        <Icon icon="material-symbols:login" class="w-5 h-5" />
-        <span>Se connecter</span>
+        <Icon 
+          v-if="isLoading" 
+          icon="material-symbols:hourglass-empty" 
+          class="w-5 h-5 animate-spin" 
+        />
+        <Icon 
+          v-else 
+          icon="material-symbols:login" 
+          class="w-5 h-5" 
+        />
+        <span>{{ isLoading ? 'Connexion en cours...' : 'Se connecter' }}</span>
       </button>
 
       <div class="text-center">

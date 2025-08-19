@@ -8,7 +8,6 @@ import { toast, type ToastOptions } from "vue3-toastify";
 const name = ref("");
 const email = ref("");
 const password = ref("");
-const acceptedTerms = ref(false);
 const isLoading = ref(false);
 const router = useRouter();
 
