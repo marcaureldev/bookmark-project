@@ -1,5 +1,99 @@
 <script setup lang="ts">
 import { Icon } from "@iconify/vue";
+import axios from "axios";
+import { useRouter } from "vue-router";
+import { ref } from "vue";
+import { toast, type ToastOptions } from "vue3-toastify";
+
+const name = ref("");
+const email = ref("");
+const password = ref("");
+const acceptedTerms = ref(false);
+const isLoading = ref(false);
+const router = useRouter();
+
+const notify = (message: string, type: "success" | "error" = "success") => {
+  toast(message, {
+    autoClose: 3000,
+    position: toast.POSITION.BOTTOM_RIGHT,
+    type: type,
+  } as ToastOptions);
+};
+
+const messages = {
+  success: "Compte créé avec succès",
+  error: "Une erreur est survenue lors de la création du compte",
+  empty: "Veuillez remplir tous les champs",
+  invalidEmail: "Veuillez saisir une adresse email valide",
+  passwordLength: "Le mot de passe doit contenir au moins 6 caractères",
+  termsNotAccepted: "Veuillez accepter les conditions d'utilisation",
+};
+
+const validateForm = () => {
+  if (!name.value || !email.value || !password.value) {
+    notify(messages.empty, "error");
+    return false;
+  }
+
+  // Validation email
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email.value)) {
+    notify(messages.invalidEmail, "error");
+    return false;
+  }
+
+  // Validation mot de passe
+  if (password.value.length < 6) {
+    notify(messages.passwordLength, "error");
+    return false;
+  }
+
+  return true;
+};
+
+const handleSubmit = async () => {
+  if (!validateForm()) return;
+
+  isLoading.value = true;
+
+  try {
+    const formData = {
+      name: name.value,
+      email: email.value,
+      password: password.value,
+    };
+
+    const response = await axios.post(
+      "https://frontend-test-api-eta.vercel.app/auth/register",
+      formData
+    );
+
+    if (response.status === 200 || response.status === 201) {
+      notify(messages.success, "success");
+      router.push("/auth/login");
+    }
+  } catch (error: any) {
+    console.error("Registration error:", error);
+
+    let errorMessage = messages.error;
+
+    if (error.response) {
+      if (error.response.data && error.response.data.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response.status === 409) {
+        errorMessage = "Un compte avec cet email existe déjà";
+      } else if (error.response.status === 400) {
+        errorMessage = "Données invalides";
+      }
+    } else if (error.request) {
+      errorMessage = "Erreur de connexion. Vérifiez votre connexion internet.";
+    }
+
+    notify(errorMessage, "error");
+  } finally {
+    isLoading.value = false;
+  }
+};
 </script>
 
 <template>
@@ -51,6 +145,8 @@ import { Icon } from "@iconify/vue";
             type="text"
             placeholder="John Doe"
             class="w-full pl-10 pr-3 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            v-model="name"
+            :disabled="isLoading"
           />
         </div>
       </div>
@@ -72,6 +168,8 @@ import { Icon } from "@iconify/vue";
             type="email"
             placeholder="votre@email.com"
             class="w-full pl-10 pr-3 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            v-model="email"
+            :disabled="isLoading"
           />
         </div>
       </div>
@@ -93,32 +191,26 @@ import { Icon } from "@iconify/vue";
             type="password"
             placeholder="••••••••"
             class="w-full pl-10 pr-3 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            v-model="password"
+            :disabled="isLoading"
           />
         </div>
       </div>
 
-      <div class="flex items-center mb-6">
-        <input
-          type="checkbox"
-          class="w-4 h-4 text-blue-600 bg-gray-800 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
-        />
-        <span class="ml-2 text-white text-xs">
-          J'accepte les
-          <a href="#" class="text-blue-500 hover:text-blue-400"
-            >Conditions d'utilisation</a
-          >
-          et la
-          <a href="#" class="text-blue-500 hover:text-blue-400"
-            >Politique de confidentialité</a
-          >
-        </span>
-      </div>
-
       <button
-        class="w-full flex items-center justify-center space-x-3 px-4 py-3 bg-gray-800 hover:bg-gray-700 text-white rounded-lg border border-gray-600 transition-colors mb-4"
+        class="w-full flex items-center justify-center space-x-3 px-4 py-3 bg-gray-800 hover:bg-gray-700 text-white rounded-lg border border-gray-600 transition-colors mb-4 disabled:opacity-50 disabled:cursor-not-allowed"
+        @click="handleSubmit"
+        :disabled="isLoading"
       >
-        <Icon icon="material-symbols:person-add" class="w-5 h-5" />
-        <span>Créer un compte</span>
+        <Icon
+          v-if="isLoading"
+          icon="material-symbols:hourglass-empty"
+          class="w-5 h-5 animate-spin"
+        />
+        <Icon v-else icon="material-symbols:person-add" class="w-5 h-5" />
+        <span>{{
+          isLoading ? "Création en cours..." : "Créer un compte"
+        }}</span>
       </button>
 
       <div class="text-center">
