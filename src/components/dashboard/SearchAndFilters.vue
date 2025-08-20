@@ -38,9 +38,7 @@ const handleTagFilter = (tag: string) => {
 
 <template>
   <div class="space-y-4">
-    <!-- Top Row: Search + Status Filters -->
     <div class="flex flex-col sm:flex-row gap-4">
-      <!-- Search Bar -->
       <div class="flex-1 relative">
         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
           <Icon icon="material-symbols:search" class="h-5 w-5 text-gray-400" />
@@ -54,7 +52,6 @@ const handleTagFilter = (tag: string) => {
         />
       </div>
 
-      <!-- Status Filter Buttons -->
       <div class="flex gap-2">
         <button
           @click="handleStatusFilter('all')"
@@ -92,9 +89,7 @@ const handleTagFilter = (tag: string) => {
       </div>
     </div>
 
-    <!-- Bottom Row: Tag Filters -->
     <div class="flex flex-wrap gap-2">
-      <!-- All Tags Button -->
       <button
         @click="handleTagFilter('all')"
         :class="[
@@ -108,7 +103,6 @@ const handleTagFilter = (tag: string) => {
         Tous les tags
       </button>
 
-      <!-- Individual Tag Buttons -->
       <button
         v-for="tag in tags"
         :key="tag"

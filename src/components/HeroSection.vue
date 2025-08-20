@@ -26,8 +26,12 @@ import Button from "./ui/Button.vue";
         </div>
 
         <div class="flex space-x-4 pointer-events-auto">
-          <Button icon="material-symbols:login" label="Se connecter" />
-          <Button icon="material-symbols:person-add" label="S'inscrire" />
+          <router-link to="/auth/login">    
+            <Button icon="material-symbols:login" label="Se connecter" />
+          </router-link>
+          <router-link to="/auth/register">
+            <Button icon="material-symbols:person-add" label="S'inscrire" />
+          </router-link>
         </div>
       </div>
     </nav>
@@ -49,10 +53,12 @@ import Button from "./ui/Button.vue";
       </p>
 
       <div class="flex space-x-6">
-        <Button
-          icon="material-symbols:login"
-          label="Commencer gratuitement"
-        />
+        <router-link to="/auth/login">
+          <Button
+            icon="material-symbols:login"
+            label="Commencer gratuitement"
+          />
+        </router-link>
         <Button icon="material-symbols:info" label="En savoir plus" />
       </div>
     </div>

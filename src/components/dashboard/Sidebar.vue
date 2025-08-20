@@ -1,15 +1,19 @@
 <script setup lang="ts">
 import { Icon } from "@iconify/vue";
+import { ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import LogoutButton from "./LogoutButton.vue";
 
 const route = useRoute();
 const router = useRouter();
+
+const currentPage = ref(route.path);
 
 const navigationItems = [
   {
     id: "dashboard",
     label: "Dashboard",
-    icon: "material-symbols:dashboard-outline",
+    icon: "streamline:dashboard-3",
     section: "main",
     path: "/dashboard",
   },
@@ -20,134 +24,85 @@ const navigationItems = [
     section: "main",
     path: "/bookmarks",
   },
-  {
-    id: "tags",
-    label: "Tags",
-    icon: "lucide:tag",
-    section: "main",
-    path: "/tags",
-  },
-  {
-    id: "recent",
-    label: "Recent",
-    icon: "material-symbols:schedule-outline",
-    section: "main",
-    path: "/recent",
-  },
-  {
-    id: "development",
-    label: "Development",
-    icon: "material-symbols:code",
-    section: "collections",
-    path: "/development",
-  },
-  {
-    id: "reading",
-    label: "Reading List",
-    icon: "material-symbols:book-outline",
-    section: "collections",
-    path: "/reading",
-  },
-  {
-    id: "inspiration",
-    label: "Inspiration",
-    icon: "material-symbols:lightbulb-outline",
-    section: "collections",
-    path: "/inspiration",
-  },
-  {
-    id: "settings",
-    label: "Settings",
-    icon: "material-symbols:settings-outline",
-    section: "settings",
-    path: "/settings",
-  },
-  {
-    id: "help",
-    label: "Help & Support",
-    icon: "material-symbols:help-outline",
-    section: "settings",
-    path: "/help",
-  },
 ];
 
 const sections = [
-  { id: "main", title: "MAIN" },
-  { id: "collections", title: "COLLECTIONS" },
-  { id: "settings", title: "SETTINGS" },
+  {
+    id: "main",
+    title: "MAIN",
+    items: navigationItems,
+  },
 ];
 
 const user = {
-  name: "Alex Morgan",
-  email: "alex@example.com",
-  avatar: "/path/to/avatar.jpg",
+  name: "John Doe",
+  email: "test@email.com",
+  avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
+};
+
+const navigateTo = (path: string) => {
+  currentPage.value = path;
+  router.push(path);
 };
 </script>
 
 <template>
   <div class="w-64 h-screen bg-white border-r border-gray-200 flex flex-col">
     <div class="flex-1 py-4 space-y-8">
-      <div class="p-3.5 border-b border-gray-200">
+      <div class="p-4 border-b border-gray-200">
         <div class="flex items-center space-x-3">
           <div
-            class="w-10 h-10 bg-blue-700 rounded-lg flex items-center justify-center"
+            class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center"
           >
-            <Icon
-              icon="material-symbols:bookmark-outline"
-              class="w-6 h-6 text-white"
-            />
+            <Icon icon="material-symbols:bookmark" class="w-5 h-5 text-white" />
           </div>
-          <span class="text-xl font-bold text-black">BookMarker</span>
+          <span class="text-xl font-bold text-gray-900">Bookmarks</span>
         </div>
       </div>
 
-      <div v-for="section in sections" :key="section.id" class="space-y-3 px-2.5">
-        <h3
-          class="text-xs font-semibold text-gray-500 uppercase tracking-wider"
-        >
-          {{ section.title }}
-        </h3>
-
-        <div class="space-y-1">
-          <span
-            v-for="item in navigationItems.filter(
-              (nav) => nav.section === section.id
-            )"
-            :key="item.id"
-            :class="[
-              'w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-colors',
-              route.path === item.path
-                ? 'bg-blue-100 text-blue-600'
-                : 'text-gray-700 hover:bg-gray-50',
-            ]"
-            @click="router.push(item.path)"
-          >
-            <Icon
-              :icon="item.icon"
+      <nav class="space-y-1">
+        <div v-for="section in sections" :key="section.id">
+          <h3 class="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+            {{ section.title }}
+          </h3>
+          <div class="mt-2 space-y-1">
+            <button
+              v-for="item in section.items"
+              :key="item.id"
+               @click="navigateTo(item.path)"
               :class="[
-                'w-5 h-5',
-                route.path === item.path ? 'text-blue-600' : 'text-gray-500'
+                'w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors',
+                currentPage === item.path
+                  ? 'bg-blue-50 text-blue-700 border-r-4 border-blue-700'
+                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
               ]"
-            />
-            <span class="font-medium">{{ item.label }}</span>
-          </span>
+            >
+              <Icon :icon="item.icon" class="w-5 h-5" />
+              <span>{{ item.label }}</span>
+            </button>
+          </div>
         </div>
-      </div>
+      </nav>
     </div>
 
     <div class="border-t border-gray-200 p-4">
-      <div class="flex items-center space-x-3">
-        <div
-          class="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center"
-        >
-          <Icon icon="material-symbols:person" class="w-6 h-6 text-gray-600" />
-        </div>
-
-        <div class="flex-1">
-          <div class="font-semibold text-black text-sm">{{ user.name }}</div>
-          <div class="text-gray-500 text-xs">{{ user.email }}</div>
+      <div class="flex items-center space-x-3 mb-4">
+        <img
+          :src="user.avatar"
+          :alt="user.name"
+          class="w-10 h-10 rounded-full"
+        />
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-medium text-gray-900 truncate">
+            {{ user.name }}
+          </p>
+          <p class="text-xs text-gray-500 truncate">
+            {{ user.email }}
+          </p>
         </div>
       </div>
+      
+      <LogoutButton />
     </div>
   </div>
 </template>

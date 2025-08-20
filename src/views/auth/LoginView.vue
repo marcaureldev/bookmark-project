@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { Icon } from "@iconify/vue";
-import axios from "axios";
 import { ref } from "vue";
 import { toast, type ToastOptions } from "vue3-toastify";
 import { useRouter } from "vue-router";
+import { authService } from "../../api/api";
 
 const email = ref("");
 const password = ref("");
@@ -55,28 +55,19 @@ const handleSubmit = async () => {
   isLoading.value = true;
 
   try {
-    const formData = {
-      email: email.value.trim(),
-      password: password.value,
-    };
+    const response = await authService.login(email.value.trim(), password.value);
+    
+    if (response.access_token) {
+      localStorage.setItem("token", response.access_token);
+      notify(messages.success, "success");
 
-    const response = await axios.post(
-      "https://frontend-test-api-eta.vercel.app/auth/login",
-      formData
-    );
-
-    if (response.status === 200) {
-      if (response.data.access_token) {
-        localStorage.setItem("token", response.data.access_token);
-        notify(messages.success, "success");
-        router.push("/dashboard");
-      } else {
-        notify("Token d'accès manquant dans la réponse", "error");
-      }
+      setTimeout(() => {
+        router.replace("/dashboard");
+      }, 100);
+    } else {
+      notify("Token d'accès manquant dans la réponse", "error");
     }
   } catch (error: any) {
-    console.error("Login error:", error);
-    
     let errorMessage = messages.error;
     
     if (error.response) {

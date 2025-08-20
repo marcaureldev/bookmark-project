@@ -24,7 +24,7 @@ const selectPeriod = (period: 'weekly' | 'monthly' | 'yearly') => {
     <button
       v-for="period in periods"
       :key="period.value"
-      @click="selectPeriod(period.value)"
+      @click="selectPeriod(period.value as 'weekly' | 'monthly' | 'yearly')"
       :class="[
         'px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-200',
         props.modelValue === period.value

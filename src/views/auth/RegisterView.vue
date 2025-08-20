@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { Icon } from "@iconify/vue";
-import axios from "axios";
-import { useRouter } from "vue-router";
 import { ref } from "vue";
 import { toast, type ToastOptions } from "vue3-toastify";
+import { useRouter } from "vue-router";
+import { authService } from "../../api/api";
 
 const name = ref("");
 const email = ref("");
@@ -25,7 +25,6 @@ const messages = {
   empty: "Veuillez remplir tous les champs",
   invalidEmail: "Veuillez saisir une adresse email valide",
   passwordLength: "Le mot de passe doit contenir au moins 6 caractères",
-  termsNotAccepted: "Veuillez accepter les conditions d'utilisation",
 };
 
 const validateForm = () => {
@@ -56,24 +55,13 @@ const handleSubmit = async () => {
   isLoading.value = true;
 
   try {
-    const formData = {
-      name: name.value,
-      email: email.value,
-      password: password.value,
-    };
-
-    const response = await axios.post(
-      "https://frontend-test-api-eta.vercel.app/auth/register",
-      formData
-    );
-
-    if (response.status === 200 || response.status === 201) {
+    const response = await authService.register(name.value, email.value, password.value);
+    
+    if (response) {
       notify(messages.success, "success");
       router.push("/auth/login");
     }
   } catch (error: any) {
-    console.error("Registration error:", error);
-
     let errorMessage = messages.error;
 
     if (error.response) {

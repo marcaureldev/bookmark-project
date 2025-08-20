@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import SearchAndFilters from './SearchAndFilters.vue';
 import BookmarksGrid from './BookmarksGrid.vue';
-import { ref } from 'vue';
 
 interface Bookmark {
   id: string;
@@ -34,15 +33,13 @@ const emit = defineEmits<{
   'loadMore': [];
 }>();
 
-// Computed counts
 const totalCount = props.bookmarks.length;
-const readCount = props.bookmarks.filter(b => b.isStarred).length; // Using starred as read for demo
+const readCount = props.bookmarks.filter(b => b.isStarred).length;
 const unreadCount = totalCount - readCount;
 </script>
 
 <template>
   <div class="space-y-6">
-    <!-- Search and Filters -->
     <SearchAndFilters
       :total-count="totalCount"
       :read-count="readCount"
@@ -53,7 +50,6 @@ const unreadCount = totalCount - readCount;
       @filter-tag="emit('filterTag', $event)"
     />
 
-    <!-- Bookmarks Grid -->
     <BookmarksGrid
       :bookmarks="props.bookmarks"
       :has-more="props.hasMore"

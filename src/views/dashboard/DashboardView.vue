@@ -6,7 +6,6 @@ import TagDistributionPanel from "../../components/dashboard/TagDistributionPane
 import PopularTagsList from "../../components/dashboard/PopularTagsList.vue";
 import { ref } from "vue";
 
-// Sample data for tag distribution
 const tagDistributionData = ref([
   { tag: "Development", read: 42, unread: 10 },
   { tag: "Work", read: 32, unread: 10 },
@@ -17,7 +16,6 @@ const tagDistributionData = ref([
   { tag: "Personal", read: 12, unread: 5 },
 ]);
 
-// Sample data for popular tags
 const popularTags = ref([
   {
     name: "Development",
