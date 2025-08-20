@@ -10,6 +10,9 @@ import PopularTagsSkeleton from "../../components/ui/PopularTagsSkeleton.vue";
 import { ref, onMounted, computed } from "vue";
 import { bookmarksService } from "../../api/api";
 
+// État pour les bookmarks (pour calculer l'activité réelle)
+const bookmarks = ref<any[]>([]);
+
 interface Stats {
   total: number;
   read: number;
@@ -36,10 +39,17 @@ const fetchStats = async () => {
   try {
     isLoading.value = true;
     error.value = null;
-    const response = await bookmarksService.getStats();
-    stats.value = response;
+    
+    // Récupérer les stats et les bookmarks en parallèle
+    const [statsResponse, bookmarksResponse] = await Promise.all([
+      bookmarksService.getStats(),
+      bookmarksService.getAll()
+    ]);
+    
+    stats.value = statsResponse;
+    bookmarks.value = bookmarksResponse;
   } catch (err) {
-    error.value = "Erreur lors du chargement des statistiques";
+    error.value = "Erreur lors du chargement des données";
   } finally {
     isLoading.value = false;
   }
@@ -52,40 +62,75 @@ onMounted(async () => {
 
 // Données calculées à partir des stats de l'API
 const tagDistributionData = computed(() => {
-  return stats.value.byCategory.map(category => ({
-    tag: category.category,
-    read: Math.floor(category.count * 0.7),
-    unread: Math.floor(category.count * 0.3)
-  }));
+  return stats.value.byCategory.map(category => {
+    const tags = category.category.includes(',') 
+      ? category.category.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0)
+      : [category.category];
+    
+    // Créer une entrée pour chaque tag individuel
+    return tags.map(tag => ({
+      tag: tag,
+      count: category.count,
+      // Pour l'instant, on utilise le count total car l'API ne fournit pas read/unread par tag
+      read: Math.floor(category.count * 0.6), 
+      unread: Math.floor(category.count * 0.4)
+    }));
+  }).flat();
 });
 
 const popularTags = computed(() => {
   const colors = ["bg-blue-500", "bg-green-500", "bg-yellow-500", "bg-red-500", "bg-purple-500", "bg-indigo-500", "bg-pink-500"];
   const icons = ["material-symbols:code", "material-symbols:work", "material-symbols:description", "material-symbols:school", "material-symbols:lightbulb", "material-symbols:design", "material-symbols:person"];
 
-  return stats.value.byCategory.map((category, index) => ({
-    name: category.category,
-    count: category.count,
-    icon: icons[index % icons.length],
-    color: colors[index % colors.length]
-  }));
+  // Créer un Map pour agréger les counts par tag individuel
+  const tagCounts = new Map<string, number>();
+  
+  stats.value.byCategory.forEach((category, _index) => {
+    // Parser les tags multiples
+    const tags = category.category.includes(',') 
+      ? category.category.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0)
+      : [category.category];
+    
+    // Ajouter le count pour chaque tag
+    tags.forEach(tag => {
+      tagCounts.set(tag, (tagCounts.get(tag) || 0) + category.count);
+    });
+  });
+  
+  // Convertir en tableau et trier par count décroissant
+  return Array.from(tagCounts.entries())
+    .sort(([,a], [,b]) => b - a)
+    .slice(0, 7) // Limiter à 7 tags les plus populaires
+    .map(([tag, count], index) => ({
+      name: tag,
+      count: count,
+      icon: icons[index % icons.length],
+      color: colors[index % colors.length]
+    }));
 });
 
-// Données d'activité pour le graphique (simulation basée sur les stats)
+// Données d'activité pour le graphique basées sur les bookmarks existants
 const activityData = computed(() => {
-  if (stats.value.total === 0) return [0, 0, 0, 0, 0, 0, 0];
+  if (bookmarks.value.length === 0) return [0, 0, 0, 0, 0, 0, 0];
   
-  // Générer des données réalistes basées sur le total
-  const baseValue = Math.max(1, Math.floor(stats.value.total / 7));
-  return [
-    baseValue + Math.floor(Math.random() * 3),
-    baseValue + Math.floor(Math.random() * 3),
-    baseValue + Math.floor(Math.random() * 3),
-    baseValue + Math.floor(Math.random() * 3),
-    baseValue + Math.floor(Math.random() * 3),
-    baseValue + Math.floor(Math.random() * 3),
-    baseValue + Math.floor(Math.random() * 3)
-  ];
+  const now = new Date();
+  const activityByDay = new Array(7).fill(0);
+  
+  // Calculer l'activité pour les 7 derniers jours
+  bookmarks.value.forEach(bookmark => {
+    const createdDate = new Date(bookmark.created_at);
+    const daysDiff = Math.floor((now.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
+    
+    // Si le bookmark a été créé dans les 7 derniers jours
+    if (daysDiff >= 0 && daysDiff < 7) {
+      const dayIndex = 6 - daysDiff; // Inverser l'index (0 = aujourd'hui, 6 = il y a 6 jours)
+      if (dayIndex >= 0 && dayIndex < 7) {
+        activityByDay[dayIndex]++;
+      }
+    }
+  });
+  
+  return activityByDay;
 });
 
 const handleViewAllTags = () => {
