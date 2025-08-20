@@ -74,7 +74,7 @@ const chartOptions = {
 </script>
 
 <template>
-  <div class="h-20">
+  <div>
     <Bar :data="chartData" :options="chartOptions" />
   </div>
 </template>
