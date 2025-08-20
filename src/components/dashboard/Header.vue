@@ -6,14 +6,10 @@ const searchQuery = ref("");
 const notificationCount = ref(3);
 
 const handleSearch = () => {
-  console.log("Recherche:", searchQuery.value);
+
 };
 
 const handleNotificationClick = () => {
-
-};
-
-const handleAddBookmark = () => {
 
 };
 </script>
@@ -58,13 +54,7 @@ const handleAddBookmark = () => {
           </button>
         </div>
 
-        <button
-          @click="handleAddBookmark"
-          class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors font-medium"
-        >
-          <Icon icon="material-symbols:add" class="h-5 w-5" />
-          <span>Add Bookmark</span>
-        </button>
+
       </div>
     </header>
   </div>

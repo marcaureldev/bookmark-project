@@ -2,7 +2,7 @@ import axios from "axios";
 
 const api = axios.create({
   baseURL: "https://frontend-test-api-eta.vercel.app",
-  timeout: 10000,
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -57,7 +57,10 @@ export const bookmarksService = {
 
   // Créer un bookmark
   create: async (bookmarkData: any) => {
-    const response = await api.post('/bookmarks', bookmarkData);
+    // Timeout spécifique pour la création (plus long)
+    const response = await api.post('/bookmarks', bookmarkData, {
+      timeout: 45000 // 45 secondes pour la création
+    });
     return response.data;
   },
 
@@ -70,6 +73,12 @@ export const bookmarksService = {
   // Supprimer un bookmark
   delete: async (id: string) => {
     const response = await api.delete(`/bookmarks/${id}`);
+    return response.data;
+  },
+
+  // Récupérer les statistiques
+  getStats: async () => {
+    const response = await api.get('/stats');
     return response.data;
   },
 };

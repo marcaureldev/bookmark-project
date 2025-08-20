@@ -9,21 +9,21 @@ const props = defineProps<{
 }>();
 
 const chartData = {
-  labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+  labels: ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'],
   datasets: [
     {
       label: 'Bookmarks',
       data: props.data || [12, 19, 8, 15, 22, 18, 25],
       backgroundColor: [
+        'rgba(147, 51, 234, 0.9)',
         'rgba(147, 51, 234, 0.8)',
-        'rgba(147, 51, 234, 0.6)',
-        'rgba(147, 51, 234, 0.4)',
+        'rgba(147, 51, 234, 0.7)',
+        'rgba(147, 51, 234, 0.9)',
         'rgba(147, 51, 234, 0.8)',
-        'rgba(147, 51, 234, 0.6)',
-        'rgba(147, 51, 234, 0.4)',
-        'rgba(147, 51, 234, 0.8)'
+        'rgba(147, 51, 234, 0.7)',
+        'rgba(147, 51, 234, 0.9)'
       ],
-      borderRadius: 4,
+      borderRadius: 6,
       borderSkipped: false,
     }
   ]
@@ -38,7 +38,7 @@ const chartOptions = {
     },
     tooltip: {
       enabled: true,
-      backgroundColor: 'rgba(0, 0, 0, 0.8)',
+      backgroundColor: 'rgba(0, 0, 0, 0.9)',
       titleColor: 'white',
       bodyColor: 'white',
       borderColor: 'rgba(147, 51, 234, 1)',
@@ -67,14 +67,14 @@ const chartOptions = {
   },
   elements: {
     bar: {
-      borderRadius: 4
+      borderRadius: 6
     }
   }
 };
 </script>
 
 <template>
-  <div class="h-16">
+  <div class="h-20">
     <Bar :data="chartData" :options="chartOptions" />
   </div>
 </template>

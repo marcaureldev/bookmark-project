@@ -1,133 +1,201 @@
 <script setup lang="ts">
 import BookmarksSection from "../../components/dashboard/BookmarksSection.vue";
-import { ref } from 'vue';
+import AddBookmarkModal from "../../components/dashboard/AddBookmarkModal.vue";
+import BookmarksSkeleton from "../../components/ui/BookmarksSkeleton.vue";
+import { Icon } from "@iconify/vue";
+import { ref, onMounted, computed } from "vue";
+import { bookmarksService } from "../../api/api";
 
-const bookmarks = ref([
-  {
-    id: '1',
-    title: 'GitHub',
-    domain: 'github.com',
-    description: 'Plateforme de développement où les développeurs façonnent l\'avenir du logiciel',
-    tags: ['Development', 'Code'],
-    addedDate: 'il y a 2 jours',
-    visits: 32,
+interface ApiBookmark {
+  id: number;
+  title: string;
+  url: string;
+  category: string;
+  status: "unread" | "reading" | "read";
+  created_at: string;
+  updated_at: string;
+  user_id: number;
+}
+
+interface DisplayBookmark {
+  id: string;
+  title: string;
+  domain: string;
+  description: string;
+  tags: string[];
+  addedDate: string;
+  visits: number;
+  isStarred: boolean;
+  icon: string;
+  iconColor: string;
+}
+
+const isAddBookmarkModalOpen = ref(false);
+const apiBookmarks = ref<ApiBookmark[]>([]);
+const displayBookmarks = ref<DisplayBookmark[]>([]);
+const isLoading = ref(true);
+const error = ref<string | null>(null);
+
+const convertToDisplayBookmarks = (
+  apiBookmarks: ApiBookmark[]
+): DisplayBookmark[] => {
+  return apiBookmarks.map((bookmark) => ({
+    id: bookmark.id.toString(),
+    title: bookmark.title,
+    domain: new URL(bookmark.url).hostname,
+    description: `Bookmark de la catégorie ${bookmark.category || "générale"}`,
+    tags: bookmark.category ? [bookmark.category] : [],
+    addedDate: formatDate(bookmark.created_at),
+    visits: 0,
     isStarred: false,
-    icon: 'mdi:github',
-    iconColor: 'bg-gray-800'
-  },
-  {
-    id: '2',
-    title: 'Figma Design System',
-    domain: 'figma.com',
-    description: 'Système de design complet pour refaire le design de votre application web',
-    tags: ['Design', 'UI/UX'],
-    addedDate: 'il y a 1 semaine',
-    visits: 17,
-    isStarred: true,
-    icon: 'ph:figma-logo-thin',
-    iconColor: 'bg-green-500'
-  },
-  {
-    id: '3',
-    title: 'Tutoriel Web Development',
-    domain: 'youtube.com',
-    description: 'Tutoriel complet couvrant HTML, CSS, JavaScript et les frameworks modernes',
-    tags: ['Video', 'Tutorial'],
-    addedDate: 'il y a 3 jours',
-    visits: 8,
-    isStarred: false,
-    icon: 'mdi:youtube',
-    iconColor: 'bg-red-500'
-  },
-  {
-    id: '4',
-    title: 'Principes UX Design',
-    domain: 'medium.com',
-    description: 'Guide complet sur les principes de design d\'expérience utilisateur',
-    tags: ['Article', 'Design'],
-    addedDate: 'il y a 5 jours',
-    visits: 24,
-    isStarred: true,
-    icon: 'mdi:file-document',
-    iconColor: 'bg-purple-500'
-  },
-  {
-    id: '5',
-    title: 'Amazon - Page Produit',
-    domain: 'amazon.com',
-    description: 'Casque sans fil avec réduction de bruit active pour une expérience immersive',
-    tags: ['Shopping', 'Wishlist'],
-    addedDate: 'il y a 1 jour',
-    visits: 3,
-    isStarred: false,
-    icon: 'mdi:cart',
-    iconColor: 'bg-orange-500'
-  },
-  {
-    id: '6',
-    title: 'Générateur Palette Couleurs',
-    domain: 'coolors.co',
-    description: 'Créez la palette de couleurs parfaite pour votre projet de design',
-    tags: ['Tool', 'Design'],
-    addedDate: 'il y a 2 semaines',
-    visits: 41,
-    isStarred: false,
-    icon: 'mdi:palette',
-    iconColor: 'bg-pink-500'
+    icon: getIconForCategory(bookmark.category),
+    iconColor: getColorForCategory(bookmark.category),
+  }));
+};
+
+const formatDate = (dateString: string): string => {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffTime = Math.abs(now.getTime() - date.getTime());
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 1) return "il y a 1 jour";
+  if (diffDays < 7) return `il y a ${diffDays} jours`;
+  if (diffDays < 30) return `il y a ${Math.floor(diffDays / 7)} semaines`;
+  return `il y a ${Math.floor(diffDays / 30)} mois`;
+};
+
+const getIconForCategory = (category: string): string => {
+  const iconMap: Record<string, string> = {
+    tech: "mdi:code",
+    design: "mdi:palette",
+    business: "mdi:briefcase",
+    education: "mdi:school",
+    entertainment: "mdi:movie",
+    shopping: "mdi:cart",
+    news: "mdi:newspaper",
+    social: "mdi:account-group",
+  };
+  return iconMap[category] || "mdi:bookmark";
+};
+
+const getColorForCategory = (category: string): string => {
+  const colorMap: Record<string, string> = {
+    tech: "bg-blue-500",
+    design: "bg-purple-500",
+    business: "bg-green-500",
+    education: "bg-yellow-500",
+    entertainment: "bg-red-500",
+    shopping: "bg-orange-500",
+    news: "bg-indigo-500",
+    social: "bg-pink-500",
+  };
+  return colorMap[category] || "bg-gray-500";
+};
+
+const fetchBookmarks = async () => {
+  try {
+    isLoading.value = true;
+    error.value = null;
+    const response = await bookmarksService.getAll();
+    apiBookmarks.value = response;
+    displayBookmarks.value = convertToDisplayBookmarks(response);
+  } catch (err) {
+    error.value = "Erreur lors du chargement des bookmarks";
+    console.error("Erreur fetchBookmarks:", err);
+  } finally {
+    isLoading.value = false;
   }
-]);
-
-const availableTags = ref([
-  'react', 'documentation', 'frontend', 'css', 'tailwind', 
-  'design', 'typescript', 'programming', 'figma', 'ui/ux'
-]);
-
-const handleSearch = (query: string) => {
-  console.log('Search:', query);
 };
 
-const handleFilterStatus = (status: 'all' | 'read' | 'unread') => {
-  console.log('Filter status:', status);
+const handleOpenAddBookmark = () => {
+  isAddBookmarkModalOpen.value = true;
 };
 
-const handleFilterTag = (tag: string) => {
-  console.log('Filter tag:', tag);
+const handleCloseModal = () => {
+  isAddBookmarkModalOpen.value = false;
 };
 
-const handleToggleStar = (id: string) => {
-  const bookmark = bookmarks.value.find(b => b.id === id);
-  if (bookmark) {
-    bookmark.isStarred = !bookmark.isStarred;
-  }
+const handleBookmarkAdded = async () => {
+  await fetchBookmarks();
+  isAddBookmarkModalOpen.value = false;
 };
 
-const handleOpenMenu = (id: string) => {
-  console.log('Open menu for bookmark:', id);
-};
+onMounted(() => {
+  fetchBookmarks();
+});
+
+const availableTags = computed(() => {
+  const tags = new Set<string>();
+  apiBookmarks.value.forEach((bookmark) => {
+    if (bookmark.category) {
+      tags.add(bookmark.category);
+    }
+  });
+  return Array.from(tags);
+});
 
 const handleVisit = (id: string) => {
-  console.log('Visit bookmark:', id);
-};
-
-const handleLoadMore = () => {
-  console.log('Load more bookmarks');
+  const bookmark = displayBookmarks.value.find((b) => b.id === id);
+  if (bookmark) {
+    const apiBookmark = apiBookmarks.value.find((b) => b.id.toString() === id);
+    if (apiBookmark) {
+      window.open(apiBookmark.url, "_blank");
+    }
+  }
 };
 </script>
 
 <template>
   <div class="flex-1 flex flex-col">
+    <BookmarksSkeleton v-if="isLoading" />
+
+    <div
+      v-else-if="error"
+      class="bg-red-50 border border-red-200 rounded-lg p-6 text-center"
+    >
+      <p class="text-red-700 font-medium">{{ error }}</p>
+      <button
+        @click="fetchBookmarks"
+        class="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+      >
+        Réessayer
+      </button>
+    </div>
+
+    <div v-else>
+      <div class="mb-6 flex items-center justify-between">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900">Mes Favoris</h1>
+          <p class="text-gray-600 mt-1">
+            {{ displayBookmarks.length }} bookmark{{
+              displayBookmarks.length > 1 ? "s" : ""
+            }}
+            sauvegardé{{ displayBookmarks.length > 1 ? "s" : "" }}
+          </p>
+        </div>
+
+        <button
+          @click="handleOpenAddBookmark"
+          class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center gap-2"
+        >
+          <Icon icon="material-symbols:add" class="w-5 h-5" />
+          Ajouter un bookmark
+        </button>
+      </div>
 
       <BookmarksSection
-        :bookmarks="bookmarks"
+        :bookmarks="displayBookmarks"
         :tags="availableTags"
         :has-more="true"
-        @search="handleSearch"
-        @filter-status="handleFilterStatus"
-        @filter-tag="handleFilterTag"
-        @toggle-star="handleToggleStar"
-        @open-menu="handleOpenMenu"
         @visit="handleVisit"
-        @load-more="handleLoadMore"
       />
+    </div>
+
+    <AddBookmarkModal
+      :is-open="isAddBookmarkModalOpen"
+      @close="handleCloseModal"
+      @bookmark-added="handleBookmarkAdded"
+    />
   </div>
 </template>
