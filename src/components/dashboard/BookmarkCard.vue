@@ -34,9 +34,6 @@ const handleOpenMenu = () => {
   emit("openMenu", props.bookmark.id);
 };
 
-const handleVisit = () => {
-  emit("visit", props.bookmark.id);
-};
 </script>
 
 <template>
