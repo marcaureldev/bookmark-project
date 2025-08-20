@@ -2,6 +2,7 @@
 import BookmarksSection from "../../components/dashboard/BookmarksSection.vue";
 import AddBookmarkModal from "../../components/dashboard/AddBookmarkModal.vue";
 import BookmarksSkeleton from "../../components/ui/BookmarksSkeleton.vue";
+import BookmarksEmptyState from "../../components/ui/BookmarksEmptyState.vue";
 import { Icon } from "@iconify/vue";
 import { ref, onMounted, computed } from "vue";
 import { bookmarksService } from "../../api/api";
@@ -39,18 +40,35 @@ const error = ref<string | null>(null);
 const convertToDisplayBookmarks = (
   apiBookmarks: ApiBookmark[]
 ): DisplayBookmark[] => {
-  return apiBookmarks.map((bookmark) => ({
-    id: bookmark.id.toString(),
-    title: bookmark.title,
-    domain: new URL(bookmark.url).hostname,
-    description: `Bookmark de la catégorie ${bookmark.category || "générale"}`,
-    tags: bookmark.category ? [bookmark.category] : [],
-    addedDate: formatDate(bookmark.created_at),
-    visits: 0,
-    isStarred: false,
-    icon: getIconForCategory(bookmark.category),
-    iconColor: getColorForCategory(bookmark.category),
-  }));
+  return apiBookmarks.map((bookmark) => {
+    const tags = bookmark.category
+      ? bookmark.category
+          .split(",")
+          .map((tag) => tag.trim())
+          .filter((tag) => tag.length > 0)
+      : [];
+
+    // Utiliser le premier tag pour l'icône et la couleur
+    const primaryTag = tags.length > 0 ? tags[0] : "general";
+
+    return {
+      id: bookmark.id.toString(),
+      title: bookmark.title,
+      domain: new URL(bookmark.url).hostname,
+      description:
+        tags.length > 0
+          ? `Bookmark avec ${
+              tags.length === 1 ? `le tag ${tags[0]}` : `${tags.length} tags`
+            }`
+          : "Bookmark sans tag",
+      tags: tags,
+      addedDate: formatDate(bookmark.created_at),
+      visits: 0,
+      isStarred: false,
+      icon: getIconForCategory(primaryTag),
+      iconColor: getColorForCategory(primaryTag),
+    };
+  });
 };
 
 const formatDate = (dateString: string): string => {
@@ -75,6 +93,7 @@ const getIconForCategory = (category: string): string => {
     shopping: "mdi:cart",
     news: "mdi:newspaper",
     social: "mdi:account-group",
+    general: "mdi:bookmark",
   };
   return iconMap[category] || "mdi:bookmark";
 };
@@ -89,6 +108,7 @@ const getColorForCategory = (category: string): string => {
     shopping: "bg-orange-500",
     news: "bg-indigo-500",
     social: "bg-pink-500",
+    general: "bg-gray-500",
   };
   return colorMap[category] || "bg-gray-500";
 };
@@ -129,10 +149,15 @@ const availableTags = computed(() => {
   const tags = new Set<string>();
   apiBookmarks.value.forEach((bookmark) => {
     if (bookmark.category) {
-      tags.add(bookmark.category);
+      // Parser les tags multiples séparés par des virgules
+      const categoryTags = bookmark.category
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter((tag) => tag.length > 0);
+      categoryTags.forEach((tag) => tags.add(tag));
     }
   });
-  return Array.from(tags);
+  return Array.from(tags).sort();
 });
 
 const handleVisit = (id: string) => {
@@ -143,6 +168,10 @@ const handleVisit = (id: string) => {
       window.open(apiBookmark.url, "_blank");
     }
   }
+};
+
+const handleImportBookmarks = () => {
+  console.log("Import bookmarks clicked");
 };
 </script>
 
@@ -164,32 +193,40 @@ const handleVisit = (id: string) => {
     </div>
 
     <div v-else>
-      <div class="mb-6 flex items-center justify-between">
-        <div>
-          <h1 class="text-2xl font-bold text-gray-900">Mes Favoris</h1>
-          <p class="text-gray-600 mt-1">
-            {{ displayBookmarks.length }} bookmark{{
-              displayBookmarks.length > 1 ? "s" : ""
-            }}
-            sauvegardé{{ displayBookmarks.length > 1 ? "s" : "" }}
-          </p>
+      <BookmarksEmptyState
+        v-if="displayBookmarks.length === 0"
+        @addBookmark="handleOpenAddBookmark"
+        @importBookmarks="handleImportBookmarks"
+      />
+
+      <div v-else>
+        <div class="mb-6 flex items-center justify-between">
+          <div>
+            <h1 class="text-2xl font-bold text-gray-900">Mes Favoris</h1>
+            <p class="text-gray-600 mt-1">
+              {{ displayBookmarks.length }} bookmark{{
+                displayBookmarks.length > 1 ? "s" : ""
+              }}
+              sauvegardé{{ displayBookmarks.length > 1 ? "s" : "" }}
+            </p>
+          </div>
+
+          <button
+            @click="handleOpenAddBookmark"
+            class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center gap-2"
+          >
+            <Icon icon="material-symbols:add" class="w-5 h-5" />
+            Ajouter un bookmark
+          </button>
         </div>
 
-        <button
-          @click="handleOpenAddBookmark"
-          class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center gap-2"
-        >
-          <Icon icon="material-symbols:add" class="w-5 h-5" />
-          Ajouter un bookmark
-        </button>
+        <BookmarksSection
+          :bookmarks="displayBookmarks"
+          :tags="availableTags"
+          :has-more="true"
+          @visit="handleVisit"
+        />
       </div>
-
-      <BookmarksSection
-        :bookmarks="displayBookmarks"
-        :tags="availableTags"
-        :has-more="true"
-        @visit="handleVisit"
-      />
     </div>
 
     <AddBookmarkModal
