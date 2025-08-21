@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import BookmarksSection from "../../components/dashboard/BookmarksSection.vue";
 import AddBookmarkModal from "../../components/dashboard/AddBookmarkModal.vue";
+import EditBookmarkModal from "../../components/dashboard/EditBookmarkModal.vue";
 import BookmarksSkeleton from "../../components/ui/BookmarksSkeleton.vue";
 import BookmarksEmptyState from "../../components/ui/BookmarksEmptyState.vue";
+import ConfirmationModal from "../../components/ui/ConfirmationModal.vue";
+import BookmarkContextMenu from "../../components/dashboard/BookmarkContextMenu.vue";
 import { Icon } from "@iconify/vue";
 import { ref, onMounted, computed } from "vue";
 import { bookmarksService } from "../../api/api";
@@ -134,7 +137,17 @@ const handleOpenAddBookmark = () => {
 
 const handleCloseModal = () => {
   isAddBookmarkModalOpen.value = false;
+  isEditBookmarkModalOpen.value = false;
 };
+
+// Nouvelles variables d'état pour les modals
+const isEditBookmarkModalOpen = ref(false);
+const isDeleteConfirmationOpen = ref(false);
+const isContextMenuOpen = ref(false);
+
+const selectedBookmark = ref<any>(null);
+const contextMenuPosition = ref({ x: 0, y: 0 });
+const bookmarkToDelete = ref<any>(null);
 
 const handleBookmarkAdded = async () => {
   await fetchBookmarks();
@@ -160,18 +173,89 @@ const availableTags = computed(() => {
   return Array.from(tags).sort();
 });
 
-const handleVisit = (id: string) => {
-  const bookmark = displayBookmarks.value.find((b) => b.id === id);
-  if (bookmark) {
-    const apiBookmark = apiBookmarks.value.find((b) => b.id.toString() === id);
-    if (apiBookmark) {
-      window.open(apiBookmark.url, "_blank");
-    }
-  }
-};
 
 const handleImportBookmarks = () => {
   console.log("Import bookmarks clicked");
+};
+
+const handleEditBookmark = (bookmark: any) => {
+  selectedBookmark.value = bookmark;
+  isEditBookmarkModalOpen.value = true;
+};
+
+const handleBookmarkUpdated = async (updatedBookmark: any) => {
+  const index = apiBookmarks.value.findIndex(b => b.id.toString() === updatedBookmark.id.toString());
+  if (index !== -1) {
+    apiBookmarks.value[index] = updatedBookmark;
+    displayBookmarks.value = convertToDisplayBookmarks(apiBookmarks.value);
+  }
+  
+  await fetchBookmarks();
+};
+
+const handleStatusChange = async (bookmark: any, newStatus: string) => {
+  try {
+    await bookmarksService.updateStatus(bookmark.id.toString(), newStatus);
+    await fetchBookmarks();
+  } catch (error) {
+    console.error('Erreur lors du changement de statut:', error);
+  }
+};
+
+const handleVisitBookmark = (url: string) => {
+  window.open(url, '_blank');
+};
+
+const handleDeleteBookmark = (bookmark: any) => {
+  bookmarkToDelete.value = bookmark;
+  isDeleteConfirmationOpen.value = true;
+};
+
+const confirmDeleteBookmark = async () => {
+  if (!bookmarkToDelete.value) return;
+  
+  try {
+    await bookmarksService.delete(bookmarkToDelete.value.id.toString());
+    await fetchBookmarks();
+    isDeleteConfirmationOpen.value = false;
+    bookmarkToDelete.value = null;
+  } catch (error) {
+    console.error('Erreur lors de la suppression:', error);
+  }
+};
+
+const handleOpenContextMenu = (bookmark: any, event: Event) => {
+  event.preventDefault();
+  selectedBookmark.value = bookmark;
+  contextMenuPosition.value = {
+    x: (event as MouseEvent).clientX,
+    y: (event as MouseEvent).clientY
+  };
+  isContextMenuOpen.value = true;
+};
+
+const handleCloseContextMenu = () => {
+  isContextMenuOpen.value = false;
+};
+
+const handleSearch = (query: string) => {
+  console.log('Recherche:', query);
+};
+
+const handleFilterStatus = (status: 'all' | 'read' | 'unread') => {
+  console.log('Filtre statut:', status);
+};
+
+const handleFilterTag = (tag: string) => {
+  console.log('Filtre tag:', tag);
+};
+
+const handleToggleStar = (id: string) => {
+  console.log('Toggle star:', id);
+};
+
+const handleLoadMore = () => {
+  console.log('Load more');
 };
 </script>
 
@@ -224,7 +308,13 @@ const handleImportBookmarks = () => {
           :bookmarks="displayBookmarks"
           :tags="availableTags"
           :has-more="true"
-          @visit="handleVisit"
+          @search="handleSearch"
+          @filter-status="handleFilterStatus"
+          @filter-tag="handleFilterTag"
+          @toggle-star="handleToggleStar"
+          @open-menu="handleOpenContextMenu"
+          @visit="handleVisitBookmark"
+          @load-more="handleLoadMore"
         />
       </div>
     </div>
@@ -233,6 +323,34 @@ const handleImportBookmarks = () => {
       :is-open="isAddBookmarkModalOpen"
       @close="handleCloseModal"
       @bookmark-added="handleBookmarkAdded"
+    />
+
+    <EditBookmarkModal
+      :is-open="isEditBookmarkModalOpen"
+      :bookmark="selectedBookmark"
+      @close="handleCloseModal"
+      @updated="handleBookmarkUpdated"
+    />
+
+    <ConfirmationModal
+      :is-open="isDeleteConfirmationOpen"
+      title="Supprimer le bookmark"
+      message="Êtes-vous sûr de vouloir supprimer ce bookmark ? Cette action est irréversible."
+      confirm-text="Supprimer"
+      cancel-text="Annuler"
+      @confirm="confirmDeleteBookmark"
+      @cancel="() => { isDeleteConfirmationOpen = false; bookmarkToDelete = null; }"
+    />
+
+    <BookmarkContextMenu
+      :is-open="isContextMenuOpen"
+      :bookmark="selectedBookmark"
+      :position="contextMenuPosition"
+      @close="handleCloseContextMenu"
+      @edit="handleEditBookmark"
+      @status-change="handleStatusChange"
+      @visit="handleVisitBookmark"
+      @delete="handleDeleteBookmark"
     />
   </div>
 </template>

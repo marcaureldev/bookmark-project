@@ -61,6 +61,8 @@ import Button from "./ui/Button.vue";
         </router-link>
         <Button icon="material-symbols:info" label="En savoir plus" />
       </div>
+      
+
     </div>
   </div>
 </template>

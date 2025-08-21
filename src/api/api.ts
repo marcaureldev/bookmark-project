@@ -57,9 +57,8 @@ export const bookmarksService = {
 
   // Créer un bookmark
   create: async (bookmarkData: any) => {
-    // Timeout spécifique pour la création (plus long)
     const response = await api.post('/bookmarks', bookmarkData, {
-      timeout: 45000 // 45 secondes pour la création
+      timeout: 45000
     });
     return response.data;
   },
@@ -73,6 +72,12 @@ export const bookmarksService = {
   // Supprimer un bookmark
   delete: async (id: string) => {
     const response = await api.delete(`/bookmarks/${id}`);
+    return response.data;
+  },
+
+  // Mettre à jour le statut d'un bookmark
+  updateStatus: async (id: string, status: string) => {
+    const response = await api.patch(`/bookmarks/${id}`, { status });
     return response.data;
   },
 

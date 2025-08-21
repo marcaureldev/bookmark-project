@@ -28,7 +28,7 @@ const emit = defineEmits<{
   'filterStatus': [status: 'all' | 'read' | 'unread'];
   'filterTag': [tag: string];
   'toggleStar': [id: string];
-  'openMenu': [id: string];
+  'openMenu': [bookmark: Bookmark, event: Event];
   'visit': [id: string];
   'loadMore': [];
 }>();
@@ -54,7 +54,7 @@ const unreadCount = totalCount - readCount;
       :bookmarks="props.bookmarks"
       :has-more="props.hasMore"
       @toggle-star="emit('toggleStar', $event)"
-      @open-menu="emit('openMenu', $event)"
+      @open-menu="(bookmark, event) => emit('openMenu', bookmark, event)"
       @visit="emit('visit', $event)"
       @load-more="emit('loadMore')"
     />

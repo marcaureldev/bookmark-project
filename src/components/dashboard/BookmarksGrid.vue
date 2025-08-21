@@ -23,7 +23,7 @@ const props = defineProps<Props>();
 
 const emit = defineEmits<{
   'toggleStar': [id: string];
-  'openMenu': [id: string];
+  'openMenu': [bookmark: Bookmark, event: Event];
   'visit': [id: string];
   'loadMore': [];
 }>();
@@ -41,7 +41,7 @@ const emit = defineEmits<{
         :key="bookmark.id"
         :bookmark="bookmark"
         @toggle-star="emit('toggleStar', $event)"
-        @open-menu="emit('openMenu', $event)"
+        @open-menu="(bookmark, event) => emit('openMenu', bookmark, event)"
         @visit="emit('visit', $event)"
       />
     </div>

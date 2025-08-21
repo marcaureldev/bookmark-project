@@ -22,7 +22,7 @@ const props = defineProps<Props>();
 
 const emit = defineEmits<{
   toggleStar: [id: string];
-  openMenu: [id: string];
+  openMenu: [bookmark: any, event: Event];
   visit: [id: string];
 }>();
 
@@ -30,8 +30,8 @@ const handleToggleStar = () => {
   emit("toggleStar", props.bookmark.id);
 };
 
-const handleOpenMenu = () => {
-  emit("openMenu", props.bookmark.id);
+const handleOpenMenu = (event: Event) => {
+  emit("openMenu", props.bookmark, event);
 };
 
 </script>
